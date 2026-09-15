@@ -1,4 +1,4 @@
-FROM golang:1.22 AS builder
+FROM golang:1.25.7-bookworm AS builder
 
 WORKDIR /app
 
@@ -7,7 +7,7 @@ RUN go mod download
 COPY . .
 RUN go build -o evaluation-service .
 
-FROM golang:1.22 AS runtime
+FROM golang:1.25.7-bookworm AS runtime
 
 WORKDIR /app
 COPY --from=builder /app/evaluation-service ./evaluation-service
