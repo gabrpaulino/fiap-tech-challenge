@@ -1,0 +1,35 @@
+# Bootstrap após o Terraform: kubectl apply -f gitops/argocd/applicationset.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: toggle-master-services
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - { name: auth-service, namespace: auth-ns, manifest: auth.yaml }
+          - { name: flag-service, namespace: flag-ns, manifest: flag.yaml }
+          - { name: targeting-service, namespace: targeting-ns, manifest: targeting.yaml }
+          - { name: evaluation-service, namespace: evaluation-ns, manifest: evaluation.yaml }
+          - { name: analytics-service, namespace: analytics-ns, manifest: analytics.yaml }
+  template:
+    metadata:
+      name: '{{name}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/gabrpaulino/fiap.git
+        targetRevision: main
+        path: k8s
+        directory:
+          include: '{{manifest}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

@@ -1,0 +1,98 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: auth-ingress
+  namespace: auth-ns
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: "/$2"
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /auth(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: auth-svc
+            port:
+              number: 8001
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flag-ingress
+  namespace: flag-ns
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /flags
+        pathType: Prefix
+        backend:
+          service:
+            name: flag-svc
+            port:
+              number: 8002
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: targeting-ingress
+  namespace: targeting-ns
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: "/$2"
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /targeting(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: targeting-svc
+            port:
+              number: 8003
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: evaluation-ingress
+  namespace: evaluation-ns
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /evaluate
+        pathType: Prefix
+        backend:
+          service:
+            name: evaluation-svc
+            port:
+              number: 8004
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: analytics-ingress
+  namespace: analytics-ns
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: "/$2"
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /analytics(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: analytics-svc
+            port:
+              number: 8005

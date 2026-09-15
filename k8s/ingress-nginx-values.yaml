@@ -1,0 +1,17 @@
+# Valores do chart oficial ingress-nginx para o cluster EKS.
+# O controller cria uma IngressClass chamada "nginx", compatível com k8s/ingress.yaml.
+controller:
+  replicaCount: 2
+
+  ingressClassResource:
+    name: nginx
+    enabled: true
+    default: false
+
+  service:
+    type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+
+  admissionWebhooks:
+    enabled: true

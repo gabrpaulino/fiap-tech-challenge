@@ -1,0 +1,56 @@
+# Gerador de carga temporário para validar o HPA de evaluation-service.
+# Aplique: kubectl apply -f k8s/load-test-evaluation.yaml
+# Remova:  kubectl delete -f k8s/load-test-evaluation.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: load-test-ns
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evaluation-load-generator
+  namespace: load-test-ns
+  labels:
+    app: evaluation-load-generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: evaluation-load-generator
+  template:
+    metadata:
+      labels:
+        app: evaluation-load-generator
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+        - name: load-generator
+          image: busybox:1.36.1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TARGET_URL
+              value: http://evaluation-svc.evaluation-ns.svc.cluster.local:8004/evaluate?user_id=load-test&flag_name=load-test
+            # Requisições simultâneas por Pod gerador. Aumente com cautela.
+            - name: CONCURRENCY
+              value: "200"
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              echo "Gerando carga para ${TARGET_URL} com ${CONCURRENCY} requisições simultâneas"
+              while true; do
+                request=0
+                while [ "$request" -lt "$CONCURRENCY" ]; do
+                  (wget -q -T 5 -t 1 -O /dev/null "$TARGET_URL" || true) &
+                  request=$((request + 1))
+                done
+                wait || true
+              done
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi

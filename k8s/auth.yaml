@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: auth-secret
+    namespace: auth-ns
+  type: Opaque
+  data:
+    DATABASE_URL: "cG9zdGdyZXM6Ly9wb3N0Z3Jlczpwb3N0Z3Jlc0BhdXRoLmNoZHhtOHNoY3FjNS51cy1lYXN0LTEucmRzLmFtYXpvbmF3cy5jb206NTQzMi9hdXRoX2RiP3NzbG1vZGU9cmVxdWlyZQ=="
+    MASTER_KEY: "U3VwZXJTZWNyZXRLZXk="
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: auth-deployment
+    namespace: auth-ns
+    labels:
+      app: auth
+  spec:
+    replicas: 2
+    selector:
+      matchLabels:
+        app: auth
+    template:
+      metadata:
+        labels:
+          app: auth
+      spec:
+        containers:
+        - name: auth
+<<<<<<< HEAD
+          image: 662010508236.dkr.ecr.us-east-1.amazonaws.com/auth-service:latest
+=======
+          image: 201193056119.dkr.ecr.us-east-1.amazonaws.com/auth-service:latest
+>>>>>>> 7217434c7a0360903fac57ca2425b94de17350fa
+          ports:
+          - containerPort: 8001
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          envFrom:
+          - secretRef:
+              name: auth-secret
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 20
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: auth-svc
+    namespace: auth-ns
+  spec:
+    type: ClusterIP
+    selector:
+      app: auth
+    ports:
+    - port: 8001
+      targetPort: 8001
+      protocol: TCP

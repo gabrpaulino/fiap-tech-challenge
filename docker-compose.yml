@@ -1,0 +1,130 @@
+version: '3.9'
+
+services:
+  postgres:
+    build:
+      context: ./postgresql
+    image: togglemaster-postgres:local
+    container_name: togglemaster-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    build:
+      context: ./redis
+    image: togglemaster-redis:local
+    container_name: togglemaster-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build:
+      context: ./auth-service
+    image: togglemaster-auth-service:local
+    container_name: togglemaster-auth-service
+    ports:
+      - "${AUTH_PORT}:8001"
+    environment:
+      PORT: "8001"
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/auth_db?sslmode=disable"
+      MASTER_KEY: ${MASTER_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  flag-service:
+    build:
+      context: ./flag-service
+    image: togglemaster-flag-service:local
+    container_name: togglemaster-flag-service
+    ports:
+      - "${FLAG_PORT}:8002"
+    environment:
+      PORT: "8002"
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/flags_db?sslmode=disable"
+      AUTH_SERVICE_URL: http://auth-service:8001
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  targeting-service:
+    build:
+      context: ./targeting-service
+    image: togglemaster-targeting-service:local
+    container_name: togglemaster-targeting-service
+    ports:
+      - "${TARGETING_PORT}:8003"
+    environment:
+      PORT: "8003"
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/targeting_db?sslmode=disable"
+      AUTH_SERVICE_URL: http://auth-service:8001
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  evaluation-service:
+    build:
+      context: ./evaluation-service
+    image: togglemaster-evaluation-service:local
+    container_name: togglemaster-evaluation-service
+    ports:
+      - "${EVALUATION_PORT}:8004"
+    environment:
+      PORT: "8004"
+      REDIS_URL: redis://redis:6379
+      FLAG_SERVICE_URL: http://flag-service:8002
+      TARGETING_SERVICE_URL: http://targeting-service:8003
+      SERVICE_API_KEY: ${SERVICE_API_KEY}
+      AWS_SQS_URL: ${AWS_SQS_URL}
+      AWS_REGION: ${AWS_REGION}
+    depends_on:
+      redis:
+        condition: service_healthy
+      flag-service:
+        condition: service_healthy
+      targeting-service:
+        condition: service_healthy
+  analytics-service:
+    build:
+      context: ./analytics-service
+    image: togglemaster-analytics-service:local
+    container_name: togglemaster-analytics-service
+    ports:
+      - "${ANALYTICS_PORT}:8005"
+    environment:
+      PORT: "8005"
+      AWS_REGION: ${AWS_REGION}
+      AWS_SQS_URL: ${AWS_SQS_URL}
+      AWS_DYNAMODB_TABLE: ${AWS_DYNAMODB_TABLE}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
+    depends_on:
+      evaluation-service:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  redis-data:

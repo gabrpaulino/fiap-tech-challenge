@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: flag-secret
+    namespace: flag-ns
+  type: Opaque
+  data:
+    DATABASE_URL: "cG9zdGdyZXM6Ly9wb3N0Z3Jlczpwb3N0Z3Jlc0BmbGFncy5jOHBsZmwxdWh3YnYudXMtZWFzdC0xLnJkcy5hbWF6b25hd3MuY29tL2ZsYWdzX2RiP3NzbG1vZGU9cmVxdWlyZQ=="
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: flag-config
+    namespace: flag-ns
+  data:
+    AUTH_SERVICE_URL: "http://auth-svc.auth-ns.svc.cluster.local:8001"
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: flag-deployment
+    namespace: flag-ns
+    labels:
+      app: flag
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: flag
+    template:
+      metadata:
+        labels:
+          app: flag
+      spec:
+        containers:
+        - name: flag
+          image: 662010508236.dkr.ecr.us-east-1.amazonaws.com/flag-service:latest
+          ports:
+          - containerPort: 8002
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "384Mi"
+          envFrom:
+          - secretRef:
+              name: flag-secret
+          - configMapRef:
+              name: flag-config
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8002
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8002
+            initialDelaySeconds: 10
+            periodSeconds: 20
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: flag-svc
+    namespace: flag-ns
+  spec:
+    type: ClusterIP
+    selector:
+      app: flag
+    ports:
+    - port: 8002
+      targetPort: 8002
+      protocol: TCP

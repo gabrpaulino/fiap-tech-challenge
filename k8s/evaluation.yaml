@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: evaluation-secret
+    namespace: evaluation-ns
+  type: Opaque
+  data:
+    SERVICE_API_KEY: "dG1fa2V5XzFhYjYzZGRiZmEzNGJjNWM2YTk5Yzc3YjBjNzk0YjQzMzFhNjAyOTZjZTQ2NDBlODYxYmNjODYyNzI1ZmM3MjI="
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: evaluation-config
+    namespace: evaluation-ns
+  data:
+    REDIS_URL: "redis://toggle-master-cache.qwstvm.0001.use1.cache.amazonaws.com:6379"
+    FLAG_SERVICE_URL: "http://flag-svc.flag-ns.svc.cluster.local:8002"
+    TARGETING_SERVICE_URL: "http://targeting-svc.targeting-ns.svc.cluster.local:8003"
+    AWS_SQS_URL: "https://sqs.us-east-1.amazonaws.com/201193056119/toggle_master_queue"
+    AWS_REGION: "us-east-1"
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: evaluation-deployment
+    namespace: evaluation-ns
+    labels:
+      app: evaluation
+  spec:
+    replicas: 2
+    selector:
+      matchLabels:
+        app: evaluation
+    template:
+      metadata:
+        labels:
+          app: evaluation
+      spec:
+        containers:
+        - name: evaluation
+          image: 662010508236.dkr.ecr.us-east-1.amazonaws.com/evaluation-service:latest
+          ports:
+          - containerPort: 8004
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          envFrom:
+          - secretRef:
+              name: evaluation-secret
+          - configMapRef:
+              name: evaluation-config
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8004
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8004
+            initialDelaySeconds: 10
+            periodSeconds: 20
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: evaluation-svc
+    namespace: evaluation-ns
+  spec:
+    type: ClusterIP
+    selector:
+      app: evaluation
+    ports:
+    - port: 8004
+      targetPort: 8004
+      protocol: TCP

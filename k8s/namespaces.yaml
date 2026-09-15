@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: auth-ns
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flag-ns
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: analytics-ns
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: evaluation-ns
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: targeting-ns
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress-ns

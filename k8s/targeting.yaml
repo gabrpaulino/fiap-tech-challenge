@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: targeting-secret
+    namespace: targeting-ns
+  type: Opaque
+  data:
+    DATABASE_URL: "cG9zdGdyZXM6Ly9wb3N0Z3Jlczpwb3N0Z3Jlc0B0YXJnZXRpbmcuYzhwbGZsMXVod2J2LnVzLWVhc3QtMS5yZHMuYW1hem9uYXdzLmNvbS90YXJnZXRpbmdfZGI/c3NsbW9kZT1yZXF1aXJl"
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: targeting-config
+    namespace: targeting-ns
+  data:
+    AUTH_SERVICE_URL: "http://auth-svc.auth-ns.svc.cluster.local:8001"
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: targeting-deployment
+    namespace: targeting-ns
+    labels:
+      app: targeting
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: targeting
+    template:
+      metadata:
+        labels:
+          app: targeting
+      spec:
+        containers:
+        - name: targeting
+          image: 662010508236.dkr.ecr.us-east-1.amazonaws.com/targeting-service:latest
+          ports:
+          - containerPort: 8003
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          envFrom:
+          - secretRef:
+              name: targeting-secret
+          - configMapRef:
+              name: targeting-config
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8003
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8003
+            initialDelaySeconds: 10
+            periodSeconds: 20
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: targeting-svc
+    namespace: targeting-ns
+  spec:
+    type: ClusterIP
+    selector:
+      app: targeting
+    ports:
+    - port: 8003
+      targetPort: 8003
+      protocol: TCP

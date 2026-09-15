@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: analytics-secret
+    namespace: analytics-ns
+  type: Opaque
+  data:
+    AWS_ACCESS_KEY_ID: "QVNJQVM1V0FLTTUzNUVVVVlFTkw="
+    AWS_SECRET_ACCESS_KEY: "Mm1Ndm1xM1NnaDNjOXdFaEptaUhqQnpNUnJwaSs4TnFRK2toRGtxOQ=="
+    AWS_SESSION_TOKEN: "SVFvSmIzSnBaMmx1WDJWakVGa2FDWFZ6TFhkbGMzUXRNaUpITUVVQ0lHQnRNNEx4dmgwQjcyVVkrWGJwaDBEclRMRzV5dGZZUjdJZk80UGNwZm5lQWlFQWlsdXZXY0RPcTV2dWtVWCtUWXlxK2VCYW9DY1dYQ3l0TzVjdE5FOGd4Z29xc0FJSUloQURHZ3d5TURFeE9UTXdOVFl4TVRraURLVEZqMTlOb3RmWUZqeFRrQ3FOQW9NT1I4Ri81ZlBBQkpKZEdUSm9Wa0wxYTFheWhXaEtXVTM4RHlIWCtwK25KMXpKa3R5d244TTdtM2hOdTV4bTJnZGxNRGtzMTJZd1Y4UmptckNDK1pBOUxFMFJnVjhpTm8wVTZRSnV1TTZ5UzF4UUtVY3V6MTQzVDhrRGRiUUt2OGVpSFVianFUTVZZekowVSs3YVc5TjlNK1JHRi95TnR2bEtDS01UV2RSTktPQlBYMDBnRERwVkN5Tlh0OUIyZFJIaDNWVnRHMHQ2RDh1UzNXU0N0RXR3NTlQelhCRTUyK2NMRzNmeHUxMnBWRm9NbU9WUkZieUZtR09BdFZyamh6VWpKK2RnZ3hWSUM3L2g2MFhhTDZic2oweHRscCtHbUZ3VUswdFR2b3hnUmlYWTJsMkJ1Y01LSFdzTUdYQWJCcmZtYWt6dFFTSHhCZEpoRXl2dnVYZ0Y3MUYweFZKTkJOUXlYWkIwTUwyeDI5SUdPcDBCWWlJQjZzaDl1aVdhUEN4N3VRZnJkYWNyS0FOazhqT3RPL29qRU9zSGtmdXFQQmxwTVNmWVZiaSt2WHFGYURPTFI0YVJ2a21HMDNrcE92S0p6aHlrZHFVZmROTXVweS9CaW9tSTZtQmViMTIxaFBQT29lVWliYm80clRCK2pLeWxocytUcUxheHpoUERFcndVM1FEMEd0Y1dhRWN3ZGtaVlVnZWo0OVh6SWRtcnVYOTFTU2s3NXVEOFloSXg3Ujk3RzNHNG1IQUJrKy9odWsyNU1BPT0="
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: analytics-config
+    namespace: analytics-ns
+  data:
+    AWS_REGION: "us-east-1"
+    AWS_SQS_URL: "https://sqs.us-east-1.amazonaws.com/201193056119/toggle_master_queue"
+    AWS_DYNAMODB_TABLE: "ToggleMasterAnalytics"
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: analytics-deployment
+    namespace: analytics-ns
+    labels:
+      app: analytics
+  spec:
+    replicas: 2
+    selector:
+      matchLabels:
+        app: analytics
+    template:
+      metadata:
+        labels:
+          app: analytics
+      spec:
+        containers:
+        - name: analytics
+          image: 201193056119.dkr.ecr.us-east-1.amazonaws.com/analytics-service:latest
+          ports:
+          - containerPort: 8005
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          envFrom:
+          - secretRef:
+              name: analytics-secret
+          - configMapRef:
+              name: analytics-config
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8005
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8005
+            initialDelaySeconds: 10
+            periodSeconds: 20
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: analytics-svc
+    namespace: analytics-ns
+  spec:
+    type: ClusterIP
+    selector:
+      app: analytics
+    ports:
+    - port: 8005
+      targetPort: 8005
+      protocol: TCP
