@@ -30,9 +30,9 @@ items:
         containers:
         - name: auth
 <<<<<<< HEAD
-          image: 662010508236.dkr.ecr.us-east-1.amazonaws.com/auth-service:latest
+          image: 377114445483.dkr.ecr.us-east-1.amazonaws.com/auth-service:b941363bf20ff4386f5bbccb6f9ffe8a704bea3e
 =======
-          image: 201193056119.dkr.ecr.us-east-1.amazonaws.com/auth-service:latest
+          image: 377114445483.dkr.ecr.us-east-1.amazonaws.com/auth-service:b941363bf20ff4386f5bbccb6f9ffe8a704bea3e
 >>>>>>> 7217434c7a0360903fac57ca2425b94de17350fa
           ports:
           - containerPort: 8001
