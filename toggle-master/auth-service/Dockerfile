@@ -2,6 +2,10 @@ FROM golang:1.25.7-bookworm AS builder
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl libssl3 libgnutls30 wget linux-libc-dev && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # 1) Copia primeiro os arquivos de dependência para aproveitar cache do build
 COPY go.mod go.sum ./
 RUN go mod download
@@ -13,6 +17,10 @@ RUN go build -o auth-service .
 FROM golang:1.25.7-bookworm AS runtime
 
 WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl libssl3 libgnutls30 wget linux-libc-dev && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 3) Copia apenas o binário do estágio anterior
 COPY --from=builder /app/auth-service ./auth-service
