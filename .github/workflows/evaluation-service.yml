@@ -3,10 +3,10 @@ name: evaluation-service CI/CD
 on:
   pull_request:
     branches: [main]
-    paths: ["evaluation-service/**", ".github/workflows/evaluation-service.yml"]
+    paths: ["toggle-master/evaluation-service/**", ".github/workflows/evaluation-service.yml"]
   push:
     branches: [main]
-    paths: ["evaluation-service/**", ".github/workflows/evaluation-service.yml"]
+    paths: ["toggle-master/evaluation-service/**", ".github/workflows/evaluation-service.yml"]
 
 permissions:
   contents: read
@@ -25,8 +25,8 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.22.x"
-          cache-dependency-path: evaluation-service/go.sum
-      - working-directory: evaluation-service
+          cache-dependency-path: toggle-master/evaluation-service/go.sum
+      - working-directory: toggle-master/evaluation-service
         run: |
           go mod download
           go build ./...
@@ -40,11 +40,11 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.22.x"
-          cache-dependency-path: evaluation-service/go.sum
+          cache-dependency-path: toggle-master/evaluation-service/go.sum
       - uses: golangci/golangci-lint-action@v9
         with:
           version: v2.6.1
-          working-directory: evaluation-service
+          working-directory: toggle-master/evaluation-service
 
   security:
     name: SAST & SCA
@@ -54,9 +54,9 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.22.x"
-          cache-dependency-path: evaluation-service/go.sum
+          cache-dependency-path: toggle-master/evaluation-service/go.sum
       - name: Run gosec
-        working-directory: evaluation-service
+        working-directory: toggle-master/evaluation-service
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@v2.22.8
           "$(go env GOPATH)/bin/gosec" -severity high ./...
@@ -64,7 +64,7 @@ jobs:
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
-          scan-ref: evaluation-service
+          scan-ref: toggle-master/evaluation-service
           scanners: vuln
           severity: CRITICAL
           exit-code: "1"
@@ -80,7 +80,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Build Docker image
-        run: docker build --pull --tag "${LOCAL_IMAGE}:${GITHUB_SHA}" evaluation-service
+        run: docker build --pull --tag "${LOCAL_IMAGE}:${GITHUB_SHA}" toggle-master/evaluation-service
       - name: Scan Docker image with Trivy
         uses: aquasecurity/trivy-action@v0.36.0
         with:
