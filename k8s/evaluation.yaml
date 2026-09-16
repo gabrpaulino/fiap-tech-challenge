@@ -39,7 +39,7 @@ items:
       spec:
         containers:
         - name: evaluation
-          image: 662010508236.dkr.ecr.us-east-1.amazonaws.com/evaluation-service:latest
+          image: 377114445483.dkr.ecr.us-east-1.amazonaws.com/evaluation-service:b941363bf20ff4386f5bbccb6f9ffe8a704bea3e
           ports:
           - containerPort: 8004
           resources:
