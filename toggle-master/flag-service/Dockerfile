@@ -35,4 +35,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Executar aplicação via Gunicorn (servidor WSGI de produção)
 # --bind: Especifica o endereço e porta onde o servidor irá escutar
+######### teste
 CMD ["gunicorn", "--bind", "0.0.0.0:8002", "app:app"]
