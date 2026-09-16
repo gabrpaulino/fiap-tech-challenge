@@ -3,23 +3,21 @@ WORKDIR /app
 # Copiar requirements para cache layer
 COPY requirements.txt .
 # Instalar dependências (--no-cache-dir reduz tamanho em ~30MB)
-RUN pip install --no-cache-dir --upgrade pip setuptools && pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip "setuptools==75.8.0" && pip install --no-cache-dir -r requirements.txt
 
 FROM python:3.12-slim-bookworm AS runtime
 WORKDIR /app
-# Copiar site-packages do estágio builder (não inclui ferramentas de build)
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-# Copiar o executável do Gunicorn para o runtime
-COPY --from=builder /usr/local/bin/gunicorn /usr/local/bin/gunicorn
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip "setuptools==75.8.0" && pip install --no-cache-dir -r requirements.txt
 # Copiar código-fonte da aplicação
 COPY . .
-# Instalar setuptools no runtime para que gunicorn consiga importar pkg_resources
-RUN pip install --no-cache-dir setuptools
 # Criar usuário não-root para executar a aplicação
 # -D: Desabilita password login (system user, mais seguro)
 # -u 1000: Define UID 1000 (primeiro usuário regular após sistema)
 # SEGURANÇA: Container rodará como 'appuser' (UID 1000), não como root
-RUN adduser --disabled-password -u 1000 appuser
+RUN apt-get update && apt-get install --no-install-recommends -y wget adduser \
+    && rm -rf /var/lib/apt/lists/* \
+    && adduser --disabled-password -u 1000 appuser
 USER appuser
 
 # Documentar porta exposta da aplicação

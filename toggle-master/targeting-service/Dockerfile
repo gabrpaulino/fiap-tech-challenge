@@ -1,15 +1,14 @@
 FROM python:3.12-slim-bookworm AS builder
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip setuptools && pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip "setuptools==75.8.0" && pip install --no-cache-dir -r requirements.txt
 
 FROM python:3.12-slim-bookworm AS runtime
 WORKDIR /app
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/local/bin/gunicorn /usr/local/bin/gunicorn
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip "setuptools==75.8.0" && pip install --no-cache-dir -r requirements.txt
 COPY . .
-RUN pip install --no-cache-dir setuptools \
-    && apt-get update && apt-get install --no-install-recommends -y wget adduser \
+RUN apt-get update && apt-get install --no-install-recommends -y wget adduser \
     && rm -rf /var/lib/apt/lists/* \
     && adduser --disabled-password --uid 1000 appuser
 USER appuser
