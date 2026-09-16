@@ -3,7 +3,7 @@ WORKDIR /app
 # Copiar requirements para cache layer
 COPY requirements.txt .
 # Instalar dependências (--no-cache-dir reduz tamanho em ~30MB)
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip setuptools && pip install --no-cache-dir -r requirements.txt
 
 FROM python:3.12-slim-bookworm AS runtime
 WORKDIR /app
@@ -13,6 +13,8 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin/gunicorn /usr/local/bin/gunicorn
 # Copiar código-fonte da aplicação
 COPY . .
+# Instalar setuptools no runtime para que gunicorn consiga importar pkg_resources
+RUN pip install --no-cache-dir setuptools
 # Criar usuário não-root para executar a aplicação
 # -D: Desabilita password login (system user, mais seguro)
 # -u 1000: Define UID 1000 (primeiro usuário regular após sistema)
