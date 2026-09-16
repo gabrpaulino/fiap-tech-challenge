@@ -8,7 +8,7 @@ items:
     namespace: targeting-ns
   type: Opaque
   data:
-    DATABASE_URL: "dGFyZ2V0aW5nLmNvM2dxYXMwMHdnMC51cy1lYXN0LTEucmRzLmFtYXpvbmF3cy5jb20="
+    DATABASE_URL: "cG9zdGdyZXM6Ly9wb3N0Z3Jlczpwb3N0Z3Jlc0B0YXJnZXRpbmcuY28zZ3FhczAwd2cwLnVzLWVhc3QtMS5yZHMuYW1hem9uYXdzLmNvbTo1NDMyL3RhcmdldGluZ19kYj9zc2xtb2RlPXJlcXVpcmU="
 - apiVersion: v1
   kind: ConfigMap
   metadata:

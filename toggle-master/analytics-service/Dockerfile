@@ -46,3 +46,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # --bind 0.0.0.0:8005: Escuta em todas as interfaces, porta 8005
 # app:app: módulo 'app.py' + variável 'app' (Flask object)
 CMD ["gunicorn", "--bind", "0.0.0.0:8005", "app:app"]
+
+# teste

@@ -19,7 +19,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: https://github.com/gabrpaulino/fiap.git
+        repoURL: https://github.com/gabrpaulino/fiap-tech-challenge.git
         targetRevision: main
         path: k8s
         directory:
