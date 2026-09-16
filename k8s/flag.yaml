@@ -35,7 +35,7 @@ items:
       spec:
         containers:
         - name: flag
-          image: 377114445483.dkr.ecr.us-east-1.amazonaws.com/flag-service:6317d61733ac53dcbe564cddc2734836feaf987b
+          image: 377114445483.dkr.ecr.us-east-1.amazonaws.com/flag-service:ca134ee2674682a26fe1f04d1f5fc7663be2541f
           ports:
           - containerPort: 8002
           resources:
