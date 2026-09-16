@@ -39,7 +39,7 @@ items:
       spec:
         containers:
         - name: analytics
-          image: 377114445483.dkr.ecr.us-east-1.amazonaws.com/analytics-service:b941363bf20ff4386f5bbccb6f9ffe8a704bea3e
+          image: 377114445483.dkr.ecr.us-east-1.amazonaws.com/analytics-service:3487ed8771210fe6c5c5ca786f6f008caf21c572
           ports:
           - containerPort: 8005
           resources:
