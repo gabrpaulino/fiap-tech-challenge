@@ -1,14 +1,14 @@
-FROM python:3.10-slim AS builder
+FROM python:3.12-slim-bookworm AS builder
 WORKDIR /app
 # Copiar requirements para cache layer
 COPY requirements.txt .
 # Instalar dependências (--no-cache-dir reduz tamanho em ~30MB)
 RUN pip install --no-cache-dir -r requirements.txt
 
-FROM python:3.10-slim AS runtime
+FROM python:3.12-slim-bookworm AS runtime
 WORKDIR /app
 # Copiar site-packages do estágio builder (não inclui ferramentas de build)
-COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 # Copiar o executável do Gunicorn para o runtime
 COPY --from=builder /usr/local/bin/gunicorn /usr/local/bin/gunicorn
 # Copiar código-fonte da aplicação
