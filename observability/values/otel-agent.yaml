@@ -1,0 +1,70 @@
+fullnameOverride: otel-agent
+mode: daemonset
+image:
+  repository: otel/opentelemetry-collector-contrib
+  tag: 0.120.0
+command:
+  name: otelcol-contrib
+presets:
+  logsCollection:
+    enabled: true
+    includeCollectorLogs: true
+  kubernetesAttributes:
+    enabled: true
+# Includes nodes tainted for system workloads, so their container logs are collected too.
+tolerations:
+  - operator: Exists
+resources:
+  requests: {cpu: 50m, memory: 128Mi}
+  limits: {cpu: 300m, memory: 256Mi}
+ports:
+  otlp: {enabled: false}
+  otlp-http: {enabled: false}
+  jaeger-compact: {enabled: false}
+  jaeger-thrift: {enabled: false}
+  jaeger-grpc: {enabled: false}
+  zipkin: {enabled: false}
+config:
+  receivers:
+    jaeger: null
+    zipkin: null
+    prometheus: null
+    otlp: null
+    filelog:
+      start_at: beginning
+      storage: file_storage
+  extensions:
+    file_storage:
+      directory: /var/lib/otelcol
+      create_directory: true
+  processors:
+    memory_limiter:
+      check_interval: 1s
+      limit_mib: 200
+      spike_limit_mib: 40
+    resource/log_source:
+      attributes:
+        - {key: log.source, value: container, action: upsert}
+  exporters:
+    debug: null
+    otlphttp:
+      endpoint: http://otel-gateway.observability.svc.cluster.local:4318
+      retry_on_failure: {enabled: true}
+      sending_queue: {enabled: true, queue_size: 1000, storage: file_storage}
+  service:
+    extensions: [health_check, file_storage]
+    pipelines:
+      traces: null
+      metrics: null
+      logs:
+        receivers: [filelog]
+        processors: [memory_limiter, k8sattributes, resource/log_source, batch]
+        exporters: [otlphttp]
+extraVolumes:
+  - name: checkpoints
+    hostPath: {path: /var/lib/togglemaster-otel, type: DirectoryOrCreate}
+extraVolumeMounts:
+  - {name: checkpoints, mountPath: /var/lib/otelcol}
+securityContext:
+  runAsUser: 0
+  runAsGroup: 0

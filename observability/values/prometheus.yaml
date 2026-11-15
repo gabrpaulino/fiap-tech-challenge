@@ -1,0 +1,174 @@
+fullnameOverride: monitoring
+kubeEtcd:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+grafana:
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  persistence:
+    enabled: true
+    size: 2Gi
+  sidecar:
+    dashboards:
+      enabled: true
+      searchNamespace: observability
+  additionalDataSources:
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki-gateway.observability.svc.cluster.local
+    jsonData:
+      maxLines: 1000
+  defaultDashboardsEnabled: true
+  alerting:
+    rules.yaml:
+      apiVersion: 1
+      groups:
+      - orgId: 1
+        name: togglemaster
+        folder: ToggleMaster
+        interval: 1m
+        rules:
+        - uid: auth-high-error-rate
+          title: AuthHighErrorRate
+          condition: B
+          for: 5m
+          noDataState: NoData
+          execErrState: Error
+          labels:
+            service: auth-service
+            namespace: auth-ns
+            severity: critical
+          annotations:
+            summary: Auth-service com mais de 5% de erros HTTP 5xx
+            description: Erros HTTP 5xx > 5%, com pelo menos 100 requisições em 5
+              minutos, sustentados por 5 minutos. Verifique banco, rollout e dependências.
+            runbook_url: https://github.com/gabrpaulino/fiap-tech-challenge/blob/main/docs/FASE4_OBSERVABILIDADE.md#runbook-auth-service
+          data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              refId: A
+              expr: ((sum(rate(tm_http_requests_total{service_name="auth-service",http_status_code=~"5.."}[5m]))
+                or vector(0)) / clamp_min(sum(rate(tm_http_requests_total{service_name="auth-service"}[5m])),
+                0.000001) > bool 0.05) * (sum(increase(tm_http_requests_total{service_name="auth-service"}[5m]))
+                >= bool 100) or vector(0)
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+              - type: query
+                evaluator:
+                  type: gt
+                  params:
+                  - 0
+                operator:
+                  type: and
+                reducer:
+                  type: last
+                  params: []
+                query:
+                  params:
+                  - B
+    contactpoints.yaml:
+      apiVersion: 1
+      contactPoints:
+      - orgId: 1
+        name: incident-router
+        receivers:
+        - uid: external-alertmanager
+          type: prometheus-alertmanager
+          settings:
+            url: http://monitoring-alertmanager.observability.svc.cluster.local:9093
+          disableResolveMessage: false
+    policies.yaml:
+      apiVersion: 1
+      policies:
+      - orgId: 1
+        receiver: incident-router
+        group_by:
+        - alertname
+        - service
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 4h
+prometheus:
+  prometheusSpec:
+    retention: 7d
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: '1'
+        memory: 2Gi
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+          - ReadWriteOnce
+          resources:
+            requests:
+              storage: 10Gi
+    additionalScrapeConfigs:
+    - job_name: otel-gateway
+      scrape_interval: 15s
+      static_configs:
+      - targets:
+        - otel-gateway.observability.svc.cluster.local:8889
+alertmanager:
+  alertmanagerSpec:
+    secrets:
+    - observability-integrations
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: 'null'
+      group_by:
+      - alertname
+      - service
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      routes:
+      - matchers:
+        - alertname="AuthHighErrorRate"
+        receiver: auth-incident
+    receivers:
+    - name: 'null'
+    - name: auth-incident
+      slack_configs:
+      - api_url_file: /etc/alertmanager/secrets/observability-integrations/slack-webhook-url
+        send_resolved: true
+        title: '[{{ .Status | toUpper }}] {{ .CommonAnnotations.summary }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }} | início={{ .StartsAt
+          }} | {{ .Annotations.runbook_url }}{{ end }}'
+      webhook_configs:
+      - url: http://self-healing.observability.svc.cluster.local:8080/alerts
+        send_resolved: false
+        http_config:
+          authorization:
+            type: Bearer
+            credentials_file: /etc/alertmanager/secrets/observability-integrations/self-healing-token
